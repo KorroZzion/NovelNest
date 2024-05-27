@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+X-Nemo-Application-Type=silica-qt5
+Icon=ru.asdnp.NovelNest
+Exec=/usr/bin/ru.asdnp.NovelNest
+Name=NovelNest
+Name[ru]=NovelNest
+
+[X-Application]
+Permissions=RemovableMedia;UserDirs
+OrganizationName=ru.asdnp
+ApplicationName=NovelNest
+ExecDBus=/usr/bin/ru.asdnp.NovelNest

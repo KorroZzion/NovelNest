@@ -1,0 +1,240 @@
+// MainPage.qml
+
+import QtQuick 2.0
+import Sailfish.Silica 1.0
+import BooksModel 1.0
+import BookDatabaseManager 1.0
+
+
+Page {
+    property int clickedIndex: -1 // добавляем новое свойство для хранения индекса нажатого элемента
+    property int count: 1
+
+    BooksModel{
+        id: booksModel
+    }
+
+    BookDatabaseManager{
+        id: bookDatabaseManager
+    }
+
+    property var bookList: []
+
+    Component.onCompleted: {
+        bookList = bookDatabaseManager.loadBooks();
+        for (var i = 0; i < bookList.length; i++) {
+            var book = bookList[i];
+            booksModel.addBook(book.title);
+        }
+    }
+
+    Connections {
+        target: booksModel
+        onItemClicked: {
+            clickedIndex = index;
+        }
+    }
+    Connections {
+        target: bookDatabaseManager
+        onDataChanged:{
+            //booksModel.addBook(count.toString())
+        }
+    }
+
+
+    SilicaGridView {
+        id: gridView
+        anchors {
+            leftMargin: 40
+            bottomMargin: 100
+            fill: parent
+        }
+        header: PageHeader { title: qsTr("My Books")}
+        cellWidth: width / 2
+        cellHeight: cellWidth
+        delegate: Element {
+            id: gridDelegate
+            MouseArea {
+                anchors.fill: parent
+                onClicked: {
+                    booksModel.itemClicked(index)
+
+                    pageStack.animatorPush(nextPage)
+                }
+            }
+
+            Label {
+                anchors.top: gridDelegate.bottom
+                padding: Theme.paddingMedium
+                text: booksModel.bookTitle(index) // Отображаем название книги
+            }
+        }
+        model: booksModel
+        VerticalScrollDecorator { }
+    }
+
+    Button {
+        anchors.bottom: parent.bottom
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: Theme.buttonWidthExtraSmall
+        height: width/2
+        color: "white"
+        text: "Add Book"
+        backgroundColor : "blue"
+        onClicked: {
+            //count += 1
+            //booksModel.addBook(count.toString())
+            pageStack.animatorPush(foundBooks)
+            //booksModel.addBook()
+        }
+    }
+
+    Component {
+        id: nextPage
+        Page {
+            SilicaFlickable {
+                id: flickablePage
+
+                anchors.fill: parent
+                PageHeader {
+                    id: titleHeader
+                    title: booksModel.bookTitle(clickedIndex)
+                }
+                Rectangle {
+                    id: imageRect
+                    anchors.top: titleHeader.bottom
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: parent.width / 2
+                    height: width * 2 / 1.4
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: "magenta" }
+                        GradientStop { position: 1.0; color: "white" }
+                    }
+                }
+                Rectangle {
+                    id: additionalRect
+                    anchors.top: imageRect.bottom
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: imageRect.width + 20
+                    height: 80
+                    color: "green"
+                    Text {
+                        anchors.centerIn: parent
+                        text: qsTr("Page: %x / %y")
+                        color: Theme.primaryColor
+                    }
+                }
+                Slider {
+                    id: pageSlider
+                    anchors.top: additionalRect.bottom
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: parent.width
+                    handleVisible: false
+                    minimumValue: 0
+                    maximumValue: 200
+                    value: 150
+                    enabled: false
+                }
+                Label {
+                    id: shortText
+                    anchors.top: pageSlider.bottom
+                    width: parent.width
+                    padding: Theme.paddingMedium
+                    text: qsTr("Something very important")
+                    truncationMode: TruncationMode.Fade
+                }
+                Button {
+                    anchors.bottom: parent.bottom
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: Theme.buttonWidthExtraSmall
+                    height: width/2
+                    color: "white"
+                    text: "Delete"
+                    backgroundColor : "blue"
+                    onClicked: {
+                        pageStack.pop()
+
+                        bookDatabaseManager.delBook(clickedIndex)
+                        booksModel.removeBook(clickedIndex)
+
+                    }
+                }
+            }
+        }
+    }
+
+    Component{
+        id: foundBooks
+        Page {
+            id: aboutPage
+            objectName: "aboutPage"
+            allowedOrientations: Orientation.All
+
+            property var booksModel: []
+
+            Component.onCompleted: {
+                var existingBooks = bookDatabaseManager.loadBooks();
+                bookFinder.findFb2Books(existingBooks);
+            }
+
+            Connections {
+                target: bookFinder
+                onBooksFound: {
+                    bookListView.model = arguments[0]; //Исправить
+                }
+            }
+
+            Column {
+                width: parent.width
+                spacing: Theme.paddingMedium
+
+                PageHeader {
+                    objectName: "pageHeader"
+                    title: qsTr("Found fb2 Books")
+                }
+
+                ListView {
+                    id: bookListView
+                    width: parent.width
+                    height: parent.height
+
+                    delegate: Item {
+                        width: parent.width
+                        height: 80
+
+                        Column {
+                            width: parent.width
+                            spacing: 5
+
+                            Text {
+                                text: modelData.split("::")[0]
+                                color: "white"
+                                font.pixelSize: 40
+                            }
+                            Text {
+                                text: modelData.split("::")[1]
+                                color: "white"
+                                font.pixelSize: 20
+                            }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                console.log("Clicked on item with title: " + modelData.split("::")[0])
+
+                                var filePath = modelData.split("::")[1]
+                                var bookInfo = bookFinder.extractBookInfo(filePath)
+                                bookDatabaseManager.addBookSQL(bookInfo.title, bookInfo.author, filePath);
+
+                                bookListView.model.splice(index, 1);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
