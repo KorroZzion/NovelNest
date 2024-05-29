@@ -6,13 +6,13 @@
 
 BookDatabaseManager::BookDatabaseManager(QObject *parent) : QObject(parent)
 {
-    /*
+
     QString dbPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/books.db";
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
     db.setDatabaseName(dbPath);
-*/
-    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
-    db.setDatabaseName("bookss.db");
+
+    //QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+    //db.setDatabaseName("bookss.db");
 
     if (!db.open()) {
         qDebug() << "Error: unable to open database";
